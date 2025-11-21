@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="flex justify-between items-end mb-8">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Dispatch Center</h1>
+        <p class="text-gray-500">Assign staff and manage request statuses.</p>
+    </div>
+    <a href="/manager-hq/" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-700">
+        Open Manager HQ &rarr;
+    </a>
+</div>
+
+<div class="grid gap-4">
+    {% for req in requests %}
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 items-start">
+        
+        <!-- Request Details -->
+        <div class="flex-grow">
+            <div class="flex items-center gap-3 mb-2">
+                <h3 class="text-xl font-bold text-gray-800">{{ req.patient_name }}</h3>
+                <span class="px-2 py-1 rounded text-xs font-bold uppercase
+                    {% if req.status == 'Pending' %} bg-yellow-100 text-yellow-800
+                    {% elif req.status == 'Completed' %} bg-green-100 text-green-800
+                    {% else %} bg-blue-100 text-blue-800 {% endif %}">
+                    {{ req.status }}
+                </span>
+            </div>
+            <div class="flex gap-6 text-sm text-gray-600">
+                <span>🚑 {{ req.service_type }}</span>
+                <span>📍 {{ req.location }}</span>
+                <span>⏰ {{ req.time_preference }}</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-400">Created by: {{ req.family_user.username }}</div>
+        </div>
+
+        <!-- Control Panel (Form) -->
+        <div class="md:w-72 bg-gray-50 p-4 rounded-lg border border-gray-100">
+            <form method="post" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="req_id" value="{{ req.id }}">
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Assign Staff</label>
+                    <select name="assigned_staff" class="w-full p-2 border rounded bg-white text-sm">
+                        <option value="">-- Unassigned --</option>
+                        {% for user in staff_list %}
+                            <option value="{{ user.id }}" {% if req.assigned_staff.id == user.id %}selected{% endif %}>
+                                {{ user.username }} ({{ user.title }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Status</label>
+                    <select name="status" class="w-full p-2 border rounded bg-white text-sm">
+                        <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Progress" {% if req.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Completed" {% if req.status == 'Completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold text-sm hover:bg-blue-700">
+                    Update Ticket
+                </button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="p-12 text-center text-gray-400 bg-white border-2 border-dashed rounded-xl">
+        No active requests in the system.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
