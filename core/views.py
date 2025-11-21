@@ -94,3 +94,15 @@ def admin_portal(request):
         'requests': active_requests, 
         'staff_list': staff_list
     })
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import ServiceRequest
+
+@api_view(['GET'])
+def api_flutter_requests(request):
+    # Fetch all requests (You can add filtering later)
+    requests = ServiceRequest.objects.all().values(
+        'id', 'patient_name', 'service_type', 'status', 'location'
+    )
+    return Response(list(requests))

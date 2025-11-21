@@ -17,4 +17,5 @@ urlpatterns = [
     path('family/', views.family_portal, name='family_portal'),
     path('staff/', views.staff_portal, name='staff_portal'),
     path('dispatch/', views.admin_portal, name='admin_portal'),
+    path('api/flutter/requests/', views.api_flutter_requests,name='api_flutter_requests'),
 ]
