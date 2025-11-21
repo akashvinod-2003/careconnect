@@ -23,13 +23,19 @@ def dashboard(request):
     # If superuser/staff without role, treat as admin
     if user.is_superuser or user.is_staff:
         return redirect('admin_portal')
-    elif user.role == 'family':
+    
+    # Get role safely with default fallback
+    user_role = getattr(user, 'role', 'family')
+    
+    if user_role == 'family':
         return redirect('family_portal')
-    elif user.role == 'staff':
+    elif user_role == 'staff':
         return redirect('staff_portal')
-    elif user.role in ['admin', 'manager']:
+    elif user_role in ['admin', 'manager']:
         return redirect('admin_portal')
-    return redirect('login')
+    
+    # Default fallback
+    return redirect('family_portal')
 
 # 2. Family View
 @login_required
