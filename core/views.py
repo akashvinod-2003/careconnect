@@ -14,7 +14,7 @@ def signup(request):
             return redirect('login')
     else:
         form = SignUpForm()
-    return render(request, 'core/signup.html', {'form': form})
+    return render(request, 'signup.html', {'form': form})
 
 # 1. The Central Hub
 @login_required
@@ -50,7 +50,7 @@ def family_portal(request):
             return redirect('family_portal')
     else:
         form = ServiceRequestForm()
-    return render(request, 'core/portal_family.html', {'requests': my_requests, 'form': form})
+    return render(request, 'portal_family.html', {'requests': my_requests, 'form': form})
 
 # 3. Staff View
 @login_required
@@ -69,7 +69,7 @@ def staff_portal(request):
         
         return redirect('staff_portal')
     
-    return render(request, 'core/portal_staff.html', {'tasks': my_tasks})
+    return render(request, 'portal_staff.html', {'tasks': my_tasks})
 
 # 4. Admin/Manager View (FIXED)
 @login_required
@@ -90,7 +90,7 @@ def admin_portal(request):
             form.save()
             return redirect('admin_portal')
     
-    return render(request, 'core/portal_admin.html', {
+    return render(request, 'portal_admin.html', {
         'requests': active_requests, 
         'staff_list': staff_list
     })
