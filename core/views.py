@@ -1,46 +1,49 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+
+# API Imports
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+
+# Local Imports
 from .models import ServiceRequest, User
 from .forms import ServiceRequestForm, DispatchUpdateForm, SignUpForm
+from .serializers import RequestSerializer
 
-# 0. SignUp View
+# ==============================================================================
+# PART 1: WEB DASHBOARD VIEWS (For Browser)
+# ==============================================================================
+
 def signup(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.role = 'family'  # Default role for new users
-            user.save()
-            return redirect('login')
+            user = form.save()
+            # Log them in immediately
+            login(request, user)
+            return redirect('dashboard')
     else:
         form = SignUpForm()
-    return render(request, 'signup.html', {'form': form})
+    return render(request, 'core/signup.html', {'form': form})
 
-# 1. The Central Hub
 @login_required
 def dashboard(request):
     user = request.user
-    # If superuser/staff without role, treat as admin
-    if user.is_superuser or user.is_staff:
-        return redirect('admin_portal')
-    
-    # Get role safely with default fallback
-    user_role = getattr(user, 'role', 'family')
-    
-    if user_role == 'family':
+    if user.role == 'family':
         return redirect('family_portal')
-    elif user_role == 'staff':
+    elif user.role == 'staff':
         return redirect('staff_portal')
-    elif user_role in ['admin', 'manager']:
+    elif user.role in ['admin', 'manager']:
         return redirect('admin_portal')
-    
-    # Default fallback
-    return redirect('family_portal')
+    return redirect('login')
 
-# 2. Family View
 @login_required
 def family_portal(request):
     my_requests = ServiceRequest.objects.filter(family_user=request.user).order_by('-created_at')
+    
     if request.method == 'POST':
         form = ServiceRequestForm(request.POST)
         if form.is_valid():
@@ -50,9 +53,9 @@ def family_portal(request):
             return redirect('family_portal')
     else:
         form = ServiceRequestForm()
-    return render(request, 'portal_family.html', {'requests': my_requests, 'form': form})
 
-# 3. Staff View
+    return render(request, 'core/portal_family.html', {'requests': my_requests, 'form': form})
+
 @login_required
 def staff_portal(request):
     my_tasks = ServiceRequest.objects.filter(assigned_staff=request.user).exclude(status='Completed')
@@ -61,25 +64,18 @@ def staff_portal(request):
         req_id = request.POST.get('req_id')
         new_status = request.POST.get('status')
         task = get_object_or_404(ServiceRequest, id=req_id, assigned_staff=request.user)
-        
-        # Allow transition: Pending -> In Progress -> Completed
-        if new_status in ['In Progress', 'Completed']:
-            task.status = new_status
-            task.save()
-        
+        task.status = new_status
+        task.save()
         return redirect('staff_portal')
-    
-    return render(request, 'portal_staff.html', {'tasks': my_tasks})
 
-# 4. Admin/Manager View (FIXED)
+    return render(request, 'core/portal_staff.html', {'tasks': my_tasks})
+
 @login_required
 def admin_portal(request):
-    if not (request.user.is_superuser or request.user.is_staff or request.user.role in ['admin', 'manager']):
+    if request.user.role not in ['admin', 'manager']:
         return redirect('dashboard')
 
     active_requests = ServiceRequest.objects.all().order_by('created_at')
-    
-    # FIX: Fetch specific list of staff for the dropdown
     staff_list = User.objects.filter(role='staff')
 
     if request.method == 'POST':
@@ -90,19 +86,62 @@ def admin_portal(request):
             form.save()
             return redirect('admin_portal')
     
-    return render(request, 'portal_admin.html', {
+    return render(request, 'core/portal_admin.html', {
         'requests': active_requests, 
         'staff_list': staff_list
     })
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from .models import ServiceRequest
+# ==============================================================================
+# PART 2: API VIEWS (For Flutter Mobile App)
+# ==============================================================================
 
-@api_view(['GET'])
-def api_flutter_requests(request):
-    # Fetch all requests (You can add filtering later)
-    requests = ServiceRequest.objects.all().values(
-        'id', 'patient_name', 'service_type', 'status', 'location'
-    )
-    return Response(list(requests))
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def api_login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    user = authenticate(username=username, password=password)
+    
+    if user:
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'role': user.role,
+            'name': user.username
+        })
+    return Response({'error': 'Invalid Credentials'}, status=400)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def api_family_requests(request):
+    if request.method == 'POST':
+        serializer = RequestSerializer(data=request.data)
+        if serializer.is_valid():
+            # Assign the logged-in user as the family_user
+            serializer.save(family_user=request.user, service_type=request.data.get('service_type'))
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    
+    tasks = ServiceRequest.objects.filter(family_user=request.user).order_by('-created_at')
+    serializer = RequestSerializer(tasks, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def api_staff_requests(request):
+    # Only show tasks assigned to this driver
+    tasks = ServiceRequest.objects.filter(assigned_staff=request.user).exclude(status='Completed')
+    
+    if request.method == 'POST':
+        req_id = request.data.get('id')
+        status = request.data.get('status')
+        try:
+            task = ServiceRequest.objects.get(id=req_id, assigned_staff=request.user)
+            task.status = status
+            task.save()
+            return Response({'status': 'updated'})
+        except ServiceRequest.DoesNotExist:
+            return Response({'error': 'Task not found'}, status=404)
+
+    serializer = RequestSerializer(tasks, many=True)
+    return Response(serializer.data)

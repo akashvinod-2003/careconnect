@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2 text-center">Join CareConnect</h2>
+        <p class="text-gray-500 text-center mb-8">Create your family account</p>
+        
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            <!-- Render the form fields manually or using as_p -->
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="w-full bg-teal-700 text-white py-4 rounded-xl font-bold text-lg hover:bg-teal-800 shadow-lg mt-4">
+                Create Account
+            </button>
+        </form>
+        
+        <p class="text-center mt-6 text-gray-500">
+            Already have an account? <a href="{% url 'login' %}" class="text-teal-700 font-bold hover:underline">Log In</a>
+        </p>
+    </div>
+</div>
+
+<!-- Add simple styling for default Django form inputs -->
+<style>
+    input { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 0.75rem; background-color: #f9fafb; }
+    input:focus { outline: 2px solid #0f766e; background-color: white; }
+    ul.errorlist { color: red; font-size: 0.8rem; list-style: none; padding: 0; }
+</style>
+{% endblock %}
