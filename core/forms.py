@@ -2,14 +2,11 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, ServiceRequest
 
-# 1. Signup Form
 class SignUpForm(UserCreationForm):
     class Meta:
         model = User
-        # We don't show 'role' here so they default to 'Family' automatically
         fields = ['username', 'email', 'first_name', 'last_name']
 
-# 2. Family Booking Form
 class ServiceRequestForm(forms.ModelForm):
     class Meta:
         model = ServiceRequest
@@ -18,20 +15,21 @@ class ServiceRequestForm(forms.ModelForm):
             'patient_name': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Patient Name'}),
             'location': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Pickup Address'}),
             'service_type': forms.Select(attrs={'class': 'w-full p-4 border rounded-xl bg-white'}),
-            'time_preference': forms.Select(choices=[('ASAP', 'ASAP'), ('1 Hour', 'In 1 Hour'), ('Tomorrow', 'Tomorrow')], attrs={'class': 'w-full p-4 border rounded-xl bg-white'}),
+            # Use HTML5 datetime-local input for web browsers
+            'time_preference': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-white', 'type': 'datetime-local'}),
         }
 
-# 3. Dispatch Form
 class DispatchUpdateForm(forms.ModelForm):
     class Meta:
         model = ServiceRequest
-        fields = ['status', 'assigned_staff']
+        # Added 'time_preference' so Manager can reschedule
+        fields = ['status', 'assigned_staff', 'time_preference']
         widgets = {
             'status': forms.Select(attrs={'class': 'w-full p-2 border rounded'}),
             'assigned_staff': forms.Select(attrs={'class': 'w-full p-2 border rounded'}),
+            'time_preference': forms.TextInput(attrs={'class': 'w-full p-2 border rounded', 'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Only show users with 'staff' role in the dropdown
         self.fields['assigned_staff'].queryset = User.objects.filter(role='staff')

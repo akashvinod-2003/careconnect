@@ -2,20 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 
-# API Imports
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
-# Local Imports
 from .models import ServiceRequest, User
 from .forms import ServiceRequestForm, DispatchUpdateForm, SignUpForm
 from .serializers import RequestSerializer
 
-# ==============================================================================
-# PART 1: WEB DASHBOARD VIEWS (For Browser)
-# ==============================================================================
+# --- WEB VIEWS ---
 
 def signup(request):
     if request.method == 'POST':
@@ -42,7 +38,6 @@ def dashboard(request):
 @login_required
 def family_portal(request):
     my_requests = ServiceRequest.objects.filter(family_user=request.user).order_by('-created_at')
-    
     if request.method == 'POST':
         form = ServiceRequestForm(request.POST)
         if form.is_valid():
@@ -52,13 +47,11 @@ def family_portal(request):
             return redirect('family_portal')
     else:
         form = ServiceRequestForm()
-
     return render(request, 'core/portal_family.html', {'requests': my_requests, 'form': form})
 
 @login_required
 def staff_portal(request):
     my_tasks = ServiceRequest.objects.filter(assigned_staff=request.user).exclude(status='Completed')
-    
     if request.method == 'POST':
         req_id = request.POST.get('req_id')
         new_status = request.POST.get('status')
@@ -66,7 +59,6 @@ def staff_portal(request):
         task.status = new_status
         task.save()
         return redirect('staff_portal')
-
     return render(request, 'core/portal_staff.html', {'tasks': my_tasks})
 
 @login_required
@@ -85,14 +77,9 @@ def admin_portal(request):
             form.save()
             return redirect('admin_portal')
     
-    return render(request, 'core/portal_admin.html', {
-        'requests': active_requests, 
-        'staff_list': staff_list
-    })
+    return render(request, 'core/portal_admin.html', {'requests': active_requests, 'staff_list': staff_list})
 
-# ==============================================================================
-# PART 2: API VIEWS (For Flutter Mobile App)
-# ==============================================================================
+# --- API VIEWS ---
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -101,23 +88,12 @@ def api_signup(request):
     password = request.data.get('password')
     email = request.data.get('email')
     
-    if not username or not password:
-        return Response({'error': 'Username and password are required'}, status=400)
-
     if User.objects.filter(username=username).exists():
         return Response({'error': 'Username already taken'}, status=400)
     
-    # Create user (Default role is 'family')
     user = User.objects.create_user(username=username, email=email, password=password, role='family')
-    
-    # Generate Token immediately
     token, _ = Token.objects.get_or_create(user=user)
-    
-    return Response({
-        'token': token.key,
-        'role': user.role,
-        'name': user.username
-    })
+    return Response({'token': token.key, 'role': user.role, 'name': user.username})
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -125,14 +101,9 @@ def api_login(request):
     username = request.data.get('username')
     password = request.data.get('password')
     user = authenticate(username=username, password=password)
-    
     if user:
         token, _ = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-            'role': user.role,
-            'name': user.username
-        })
+        return Response({'token': token.key, 'role': user.role, 'name': user.username})
     return Response({'error': 'Invalid Credentials'}, status=400)
 
 @api_view(['GET', 'POST'])
@@ -141,10 +112,10 @@ def api_family_requests(request):
     if request.method == 'POST':
         serializer = RequestSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(family_user=request.user, service_type=request.data.get('service_type'))
+            # Ensure time_preference is passed through
+            serializer.save(family_user=request.user, service_type=request.data.get('service_type'), time_preference=request.data.get('time_preference'))
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
-    
     tasks = ServiceRequest.objects.filter(family_user=request.user).order_by('-created_at')
     serializer = RequestSerializer(tasks, many=True)
     return Response(serializer.data)
@@ -153,7 +124,6 @@ def api_family_requests(request):
 @permission_classes([IsAuthenticated])
 def api_staff_requests(request):
     tasks = ServiceRequest.objects.filter(assigned_staff=request.user).exclude(status='Completed')
-    
     if request.method == 'POST':
         req_id = request.data.get('id')
         status = request.data.get('status')
@@ -164,6 +134,5 @@ def api_staff_requests(request):
             return Response({'status': 'updated'})
         except ServiceRequest.DoesNotExist:
             return Response({'error': 'Task not found'}, status=404)
-
     serializer = RequestSerializer(tasks, many=True)
     return Response(serializer.data)

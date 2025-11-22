@@ -4,7 +4,7 @@
 <div class="flex justify-between items-end mb-8">
     <div>
         <h1 class="text-3xl font-bold text-gray-800">Dispatch Center</h1>
-        <p class="text-gray-500">Assign staff and manage request statuses.</p>
+        <p class="text-gray-500">Assign staff, reschedule, or decline requests.</p>
     </div>
     <a href="/manager-hq/" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-700">
         Open Manager HQ &rarr;
@@ -13,15 +13,16 @@
 
 <div class="grid gap-4">
     {% for req in requests %}
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 items-start">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 items-start 
+        {% if req.status == 'Declined' %}opacity-60 bg-gray-50{% endif %}">
         
-        <!-- Request Details -->
         <div class="flex-grow">
             <div class="flex items-center gap-3 mb-2">
                 <h3 class="text-xl font-bold text-gray-800">{{ req.patient_name }}</h3>
                 <span class="px-2 py-1 rounded text-xs font-bold uppercase
                     {% if req.status == 'Pending' %} bg-yellow-100 text-yellow-800
                     {% elif req.status == 'Completed' %} bg-green-100 text-green-800
+                    {% elif req.status == 'Declined' %} bg-red-100 text-red-800
                     {% else %} bg-blue-100 text-blue-800 {% endif %}">
                     {{ req.status }}
                 </span>
@@ -29,17 +30,21 @@
             <div class="flex gap-6 text-sm text-gray-600">
                 <span>🚑 {{ req.service_type }}</span>
                 <span>📍 {{ req.location }}</span>
-                <span>⏰ {{ req.time_preference }}</span>
+                <span class="font-bold text-teal-700">⏰ {{ req.time_preference }}</span>
             </div>
             <div class="mt-2 text-xs text-gray-400">Created by: {{ req.family_user.username }}</div>
         </div>
 
-        <!-- Control Panel (Form) -->
-        <div class="md:w-72 bg-gray-50 p-4 rounded-lg border border-gray-100">
+        <div class="md:w-80 bg-gray-50 p-4 rounded-lg border border-gray-100">
             <form method="post" class="space-y-3">
                 {% csrf_token %}
                 <input type="hidden" name="req_id" value="{{ req.id }}">
                 
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Appointment Time</label>
+                    <input type="datetime-local" name="time_preference" value="{{ req.time_preference }}" class="w-full p-2 border rounded bg-white text-sm">
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Assign Staff</label>
                     <select name="assigned_staff" class="w-full p-2 border rounded bg-white text-sm">
@@ -58,6 +63,7 @@
                         <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Pending</option>
                         <option value="In Progress" {% if req.status == 'In Progress' %}selected{% endif %}>In Progress</option>
                         <option value="Completed" {% if req.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Declined" {% if req.status == 'Declined' %}selected{% endif %} class="text-red-600 font-bold">Declined</option>
                     </select>
                 </div>
 
