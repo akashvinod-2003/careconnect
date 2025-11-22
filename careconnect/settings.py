@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework.authtoken',  # For Flutter API Token Auth
     # Custom Apps
     'core',
     'rest_framework', # For Flutter API
