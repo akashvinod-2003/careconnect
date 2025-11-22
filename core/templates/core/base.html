@@ -6,6 +6,18 @@
     <title>CareConnect</title>
     <!-- Import Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Smooth transition for the refresh indicator */
+        .live-indicator {
+            transition: opacity 0.5s ease-in-out;
+        }
+        .blink {
+            animation: blinker 1.5s linear infinite;
+        }
+        @keyframes blinker {
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 <body class="bg-slate-50 text-gray-800 font-sans min-h-screen flex flex-col">
 
@@ -14,12 +26,17 @@
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <a href="/" class="text-2xl font-bold text-teal-700 flex items-center gap-2">
                 ❤️ CareConnect
+                <!-- Live Indicator -->
+                <span class="flex h-3 w-3 relative ml-2" title="Live Updates Active">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
             </a>
             
             <div>
                 {% if user.is_authenticated %}
                     <div class="flex items-center gap-4">
-                        <span class="text-sm font-semibold bg-gray-100 px-3 py-1 rounded-full text-gray-600">
+                        <span class="text-sm font-semibold bg-gray-100 px-3 py-1 rounded-full text-gray-600 hidden sm:inline-block">
                             {{ user.username }} ({{ user.role|title }})
                         </span>
                         <form action="{% url 'logout' %}" method="post" class="inline">
@@ -36,6 +53,17 @@
 
     <!-- Main Content Area -->
     <main class="flex-grow max-w-6xl mx-auto w-full p-4 mt-4">
+        <!-- Messages (Toasts) -->
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-4 mb-2 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block content %}
         <!-- Child pages will inject their content here -->
         {% endblock %}
@@ -45,6 +73,39 @@
     <footer class="bg-slate-800 text-white text-center py-6 mt-auto">
         <p>&copy; 2025 CareConnect Enterprise. All rights reserved.</p>
     </footer>
+
+    <!-- SMART AUTO-REFRESH SCRIPT -->
+    <script>
+        (function() {
+            // Configuration
+            const REFRESH_INTERVAL = 15000; // 15 seconds
+            
+            function shouldSkipRefresh() {
+                // 1. Don't refresh if user is typing in an input
+                const activeTag = document.activeElement.tagName;
+                if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+                    return true;
+                }
+                
+                // 2. Don't refresh if a modal or popup is likely open (basic check)
+                if (document.body.classList.contains('modal-open')) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            setInterval(() => {
+                if (shouldSkipRefresh()) {
+                    console.log("User is working... skipping auto-refresh");
+                } else {
+                    console.log("Refreshing data...");
+                    // Reloads the page to fetch new Django data
+                    window.location.reload();
+                }
+            }, REFRESH_INTERVAL);
+        })();
+    </script>
 
 </body>
 </html>
