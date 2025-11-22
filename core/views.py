@@ -22,7 +22,6 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Log them in immediately
             login(request, user)
             return redirect('dashboard')
     else:
@@ -97,6 +96,31 @@ def admin_portal(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+def api_signup(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    email = request.data.get('email')
+    
+    if not username or not password:
+        return Response({'error': 'Username and password are required'}, status=400)
+
+    if User.objects.filter(username=username).exists():
+        return Response({'error': 'Username already taken'}, status=400)
+    
+    # Create user (Default role is 'family')
+    user = User.objects.create_user(username=username, email=email, password=password, role='family')
+    
+    # Generate Token immediately
+    token, _ = Token.objects.get_or_create(user=user)
+    
+    return Response({
+        'token': token.key,
+        'role': user.role,
+        'name': user.username
+    })
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def api_login(request):
     username = request.data.get('username')
     password = request.data.get('password')
@@ -117,7 +141,6 @@ def api_family_requests(request):
     if request.method == 'POST':
         serializer = RequestSerializer(data=request.data)
         if serializer.is_valid():
-            # Assign the logged-in user as the family_user
             serializer.save(family_user=request.user, service_type=request.data.get('service_type'))
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
@@ -129,7 +152,6 @@ def api_family_requests(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def api_staff_requests(request):
-    # Only show tasks assigned to this driver
     tasks = ServiceRequest.objects.filter(assigned_staff=request.user).exclude(status='Completed')
     
     if request.method == 'POST':

@@ -6,7 +6,7 @@ from core import views
 urlpatterns = [
     path('manager-hq/', admin.site.urls),
     
-    # Auth (Web)
+    # Web Auth
     path('login/', auth_views.LoginView.as_view(template_name='core/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('signup/', views.signup, name='signup'),
@@ -18,9 +18,9 @@ urlpatterns = [
     path('dispatch/', views.admin_portal, name='admin_portal'),
 
     # Mobile API
+    path('api/signup/', views.api_signup),
     path('api/login/', views.api_login),
     path('api/family/', views.api_family_requests),
     path('api/staff/', views.api_staff_requests),
-    # Legacy support for older Flutter test
-    path('api/flutter/requests/', views.api_staff_requests),
+    path('api/flutter/requests/', views.api_staff_requests), # Legacy
 ]
