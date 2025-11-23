@@ -10,19 +10,19 @@ class SignUpForm(UserCreationForm):
 class ServiceRequestForm(forms.ModelForm):
     class Meta:
         model = ServiceRequest
-        fields = ['patient_name', 'service_type', 'location', 'time_preference']
+        # Updated fields
+        fields = ['patient_name', 'service_type', 'pickup_address', 'dropoff_address', 'time_preference']
         widgets = {
             'patient_name': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Patient Name'}),
-            'location': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Pickup Address'}),
+            'pickup_address': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Home Address'}),
+            'dropoff_address': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Hospital/Shop Address'}),
             'service_type': forms.Select(attrs={'class': 'w-full p-4 border rounded-xl bg-white'}),
-            # Use HTML5 datetime-local input for web browsers
             'time_preference': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-white', 'type': 'datetime-local'}),
         }
 
 class DispatchUpdateForm(forms.ModelForm):
     class Meta:
         model = ServiceRequest
-        # Added 'time_preference' so Manager can reschedule
         fields = ['status', 'assigned_staff', 'time_preference']
         widgets = {
             'status': forms.Select(attrs={'class': 'w-full p-2 border rounded'}),

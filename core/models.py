@@ -25,7 +25,7 @@ class ServiceRequest(models.Model):
         ('Pending', 'Pending'),
         ('In Progress', 'In Progress'),
         ('Completed', 'Completed'),
-        ('Declined', 'Declined'), # <--- New Status
+        ('Declined', 'Declined'),
     )
 
     family_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requests_created')
@@ -33,11 +33,19 @@ class ServiceRequest(models.Model):
     
     patient_name = models.CharField(max_length=100)
     service_type = models.CharField(max_length=50, choices=SERVICE_TYPES)
-    location = models.CharField(max_length=200)
     
-    # Can store "ASAP" or "2023-10-25 14:30"
+    # Text Addresses (Human Readable)
+    pickup_address = models.CharField(max_length=255, default="", blank=True)
+    dropoff_address = models.CharField(max_length=255, default="", blank=True)
+    
+    # NEW: GPS Coordinates (Machine Readable for Maps)
+    # We use FloatField because coordinates are decimals (e.g., 40.7128)
+    pickup_lat = models.FloatField(null=True, blank=True)
+    pickup_lng = models.FloatField(null=True, blank=True)
+    dropoff_lat = models.FloatField(null=True, blank=True)
+    dropoff_lng = models.FloatField(null=True, blank=True)
+    
     time_preference = models.CharField(max_length=100, default="ASAP") 
-    
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

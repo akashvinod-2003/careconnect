@@ -16,9 +16,15 @@
                 {{ form.patient_name }}
             </div>
             
-            <div>
-                <label class="block text-sm font-bold text-gray-600 mb-1">Pickup Location</label>
-                {{ form.location }}
+            <div class="grid grid-cols-1 gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <div>
+                    <label class="block text-xs font-bold text-blue-700 uppercase mb-1">From (Home)</label>
+                    {{ form.pickup_address }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-700 uppercase mb-1">To (Destination)</label>
+                    {{ form.dropoff_address }}
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -61,9 +67,13 @@
                 </span>
             </div>
             
-            <div class="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                <span>📍 {{ req.location }}</span>
-                <span>⏰ {{ req.time_preference }}</span>
+            <div class="mt-4 space-y-1 text-sm text-gray-600">
+                <div class="flex items-center gap-2"><span class="text-blue-600">🏠</span> {{ req.pickup_address }}</div>
+                <div class="flex items-center gap-2"><span class="text-red-600">📍</span> {{ req.dropoff_address }}</div>
+            </div>
+            
+            <div class="mt-3 text-xs font-bold text-gray-400 border-t pt-2">
+                Scheduled: {{ req.time_preference }}
             </div>
 
             {% if req.assigned_staff %}
