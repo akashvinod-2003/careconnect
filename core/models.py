@@ -34,12 +34,11 @@ class ServiceRequest(models.Model):
     patient_name = models.CharField(max_length=100)
     service_type = models.CharField(max_length=50, choices=SERVICE_TYPES)
     
-    # Text Addresses (Human Readable)
+    # Addresses (Text)
     pickup_address = models.CharField(max_length=255, default="", blank=True)
     dropoff_address = models.CharField(max_length=255, default="", blank=True)
     
-    # NEW: GPS Coordinates (Machine Readable for Maps)
-    # We use FloatField because coordinates are decimals (e.g., 40.7128)
+    # Coordinates (Numbers for the Map)
     pickup_lat = models.FloatField(null=True, blank=True)
     pickup_lng = models.FloatField(null=True, blank=True)
     dropoff_lat = models.FloatField(null=True, blank=True)

@@ -2,20 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 
-# API Imports
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
-# Local Imports
 from .models import ServiceRequest, User
 from .forms import ServiceRequestForm, DispatchUpdateForm, SignUpForm
 from .serializers import RequestSerializer
 
-# ==============================================================================
-# PART 1: WEB DASHBOARD VIEWS
-# ==============================================================================
+# --- WEB DASHBOARD ---
 
 def signup(request):
     if request.method == 'POST':
@@ -42,7 +38,6 @@ def dashboard(request):
 @login_required
 def family_portal(request):
     my_requests = ServiceRequest.objects.filter(family_user=request.user).order_by('-created_at')
-    
     if request.method == 'POST':
         form = ServiceRequestForm(request.POST)
         if form.is_valid():
@@ -52,13 +47,11 @@ def family_portal(request):
             return redirect('family_portal')
     else:
         form = ServiceRequestForm()
-
     return render(request, 'core/portal_family.html', {'requests': my_requests, 'form': form})
 
 @login_required
 def staff_portal(request):
     my_tasks = ServiceRequest.objects.filter(assigned_staff=request.user).exclude(status='Completed')
-    
     if request.method == 'POST':
         req_id = request.POST.get('req_id')
         new_status = request.POST.get('status')
@@ -66,17 +59,14 @@ def staff_portal(request):
         task.status = new_status
         task.save()
         return redirect('staff_portal')
-
     return render(request, 'core/portal_staff.html', {'tasks': my_tasks})
 
 @login_required
 def admin_portal(request):
     if request.user.role not in ['admin', 'manager']:
         return redirect('dashboard')
-
     active_requests = ServiceRequest.objects.all().order_by('created_at')
     staff_list = User.objects.filter(role='staff')
-
     if request.method == 'POST':
         req_id = request.POST.get('req_id')
         instance = get_object_or_404(ServiceRequest, id=req_id)
@@ -84,15 +74,9 @@ def admin_portal(request):
         if form.is_valid():
             form.save()
             return redirect('admin_portal')
-    
-    return render(request, 'core/portal_admin.html', {
-        'requests': active_requests, 
-        'staff_list': staff_list
-    })
+    return render(request, 'core/portal_admin.html', {'requests': active_requests, 'staff_list': staff_list})
 
-# ==============================================================================
-# PART 2: API VIEWS (Updated for Coordinates)
-# ==============================================================================
+# --- MOBILE API ---
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -101,15 +85,11 @@ def api_signup(request):
     password = request.data.get('password')
     email = request.data.get('email')
     
-    if not username or not password:
-        return Response({'error': 'Username and password are required'}, status=400)
-
     if User.objects.filter(username=username).exists():
         return Response({'error': 'Username already taken'}, status=400)
     
     user = User.objects.create_user(username=username, email=email, password=password, role='family')
     token, _ = Token.objects.get_or_create(user=user)
-    
     return Response({'token': token.key, 'role': user.role, 'name': user.username})
 
 @api_view(['POST'])
@@ -129,17 +109,17 @@ def api_family_requests(request):
     if request.method == 'POST':
         serializer = RequestSerializer(data=request.data)
         if serializer.is_valid():
-            # NEW: Save GPS Coordinates explicitly
             serializer.save(
                 family_user=request.user, 
                 service_type=request.data.get('service_type'),
                 time_preference=request.data.get('time_preference'),
                 pickup_address=request.data.get('pickup_address'),
                 dropoff_address=request.data.get('dropoff_address'),
-                pickup_lat=request.data.get('pickup_lat'), # <--- NEW
-                pickup_lng=request.data.get('pickup_lng'), # <--- NEW
-                dropoff_lat=request.data.get('dropoff_lat'), # <--- NEW
-                dropoff_lng=request.data.get('dropoff_lng')  # <--- NEW
+                # Save coordinates
+                pickup_lat=request.data.get('pickup_lat'),
+                pickup_lng=request.data.get('pickup_lng'),
+                dropoff_lat=request.data.get('dropoff_lat'),
+                dropoff_lng=request.data.get('dropoff_lng')
             )
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)

@@ -1,22 +1,26 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CareConnect</title>
-    <!-- Import Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS -->
+    <script src="{% static 'js/tailwind.js' %}"></script>
+    <script>
+        // Fallback if local tailwind missing
+        if (typeof tailwind === 'undefined') {
+            document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+        }
+    </script>
+    
+    <!-- LEAFLET JS (OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <style>
-        /* Smooth transition for the refresh indicator */
-        .live-indicator {
-            transition: opacity 0.5s ease-in-out;
-        }
-        .blink {
-            animation: blinker 1.5s linear infinite;
-        }
-        @keyframes blinker {
-            50% { opacity: 0.5; }
-        }
+        .live-indicator { transition: opacity 0.5s ease-in-out; }
+        #map-picker { height: 400px; width: 100%; border-radius: 1rem; z-index: 1; }
     </style>
 </head>
 <body class="bg-slate-50 text-gray-800 font-sans min-h-screen flex flex-col">
@@ -26,7 +30,6 @@
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <a href="/" class="text-2xl font-bold text-teal-700 flex items-center gap-2">
                 ❤️ CareConnect
-                <!-- Live Indicator -->
                 <span class="flex h-3 w-3 relative ml-2" title="Live Updates Active">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
@@ -51,9 +54,7 @@
         </div>
     </nav>
 
-    <!-- Main Content Area -->
     <main class="flex-grow max-w-6xl mx-auto w-full p-4 mt-4">
-        <!-- Messages (Toasts) -->
         {% if messages %}
             <div class="mb-4">
                 {% for message in messages %}
@@ -64,48 +65,41 @@
             </div>
         {% endif %}
 
-        {% block content %}
-        <!-- Child pages will inject their content here -->
-        {% endblock %}
+        {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
     <footer class="bg-slate-800 text-white text-center py-6 mt-auto">
         <p>&copy; 2025 CareConnect Enterprise. All rights reserved.</p>
     </footer>
 
-    <!-- SMART AUTO-REFRESH SCRIPT -->
+    <!-- SMART AUTO-REFRESH -->
     <script>
         (function() {
-            // Configuration
-            const REFRESH_INTERVAL = 15000; // 15 seconds
+            const REFRESH_INTERVAL = 15000; 
             
             function shouldSkipRefresh() {
-                // 1. Don't refresh if user is typing in an input
-                const activeTag = document.activeElement.tagName;
-                if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
-                    return true;
-                }
-                
-                // 2. Don't refresh if a modal or popup is likely open (basic check)
-                if (document.body.classList.contains('modal-open')) {
-                    return true;
-                }
+                // 1. If the user has modified the map or form (Global Flag)
+                if (window.isFormDirty) return true;
 
+                // 2. If user is currently typing
+                const activeTag = document.activeElement.tagName;
+                if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return true;
+                
+                // 3. If dragging the map
+                if (document.body.classList.contains('leaflet-dragging')) return true; 
+                
                 return false;
             }
 
             setInterval(() => {
-                if (shouldSkipRefresh()) {
-                    console.log("User is working... skipping auto-refresh");
-                } else {
+                if (!shouldSkipRefresh()) {
                     console.log("Refreshing data...");
-                    // Reloads the page to fetch new Django data
                     window.location.reload();
+                } else {
+                    console.log("User is working... skipping auto-refresh");
                 }
             }, REFRESH_INTERVAL);
         })();
     </script>
-
 </body>
 </html>

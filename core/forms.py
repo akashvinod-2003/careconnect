@@ -10,14 +10,23 @@ class SignUpForm(UserCreationForm):
 class ServiceRequestForm(forms.ModelForm):
     class Meta:
         model = ServiceRequest
-        # Updated fields
-        fields = ['patient_name', 'service_type', 'pickup_address', 'dropoff_address', 'time_preference']
+        fields = [
+            'patient_name', 'service_type', 'time_preference',
+            'pickup_address', 'dropoff_address',
+            'pickup_lat', 'pickup_lng', 'dropoff_lat', 'dropoff_lng'
+        ]
         widgets = {
             'patient_name': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Patient Name'}),
-            'pickup_address': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Home Address'}),
-            'dropoff_address': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Hospital/Shop Address'}),
+            'pickup_address': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Drag Green Marker', 'readonly': 'readonly'}),
+            'dropoff_address': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-gray-50', 'placeholder': 'Drag Red Marker', 'readonly': 'readonly'}),
             'service_type': forms.Select(attrs={'class': 'w-full p-4 border rounded-xl bg-white'}),
             'time_preference': forms.TextInput(attrs={'class': 'w-full p-4 border rounded-xl bg-white', 'type': 'datetime-local'}),
+            
+            # Hidden fields for the Map Coordinates
+            'pickup_lat': forms.HiddenInput(),
+            'pickup_lng': forms.HiddenInput(),
+            'dropoff_lat': forms.HiddenInput(),
+            'dropoff_lng': forms.HiddenInput(),
         }
 
 class DispatchUpdateForm(forms.ModelForm):
