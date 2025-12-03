@@ -6,6 +6,14 @@
         <h2 class="text-3xl font-bold text-gray-800 mb-2 text-center">Welcome Back</h2>
         <p class="text-gray-500 text-center mb-8">Please sign in to continue</p>
         
+        <!-- ERROR MESSAGE BLOCK -->
+        {% if form.errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm" role="alert">
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline">Invalid username or password. Please try again.</span>
+            </div>
+        {% endif %}
+
         <form method="post" class="space-y-6">
             {% csrf_token %}
             
@@ -23,10 +31,13 @@
                 Sign In
             </button>
         </form>
-        
-        <p class="text-center mt-6 text-gray-600">
-            Don't have an account? <a href="{% url 'signup' %}" class="text-teal-700 hover:underline font-bold">Sign Up</a>
-        </p>
+
+        <!-- Signup Link -->
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">Don't have an account? 
+                <a href="{% url 'signup' %}" class="font-bold text-teal-700 hover:text-teal-900 transition">Sign up</a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
